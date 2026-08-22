@@ -5,3 +5,8 @@ edition = "2024"
 description = "An implementation of locally verifiable aggregated concealed signatures"
 
 [dependencies]
+ark-bls12-381 = { version = "0.4.0" }
+ark-ec = { version = "0.4.0" }
+ark-ff = { version = "0.4.0" }
+ark-std = { version = "0.4.0" }
+sha2 = { version = "0.10.9" }

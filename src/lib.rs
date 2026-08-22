@@ -1,14 +1,17 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod aggregate;
+pub mod conceal;
+pub mod error;
+pub mod keys;
+pub mod open;
+pub mod params;
+pub mod scheme;
+pub mod setup;
+pub mod signature;
+pub mod utils;
+pub mod verify;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use keys::{key_gen, SignKey, VerifyKey};
+pub use scheme::Scheme;
+pub use setup::{csetup, CSetupParameters, V, W};
+pub use signature::{sign, Signature};
+pub use verify::verify;
