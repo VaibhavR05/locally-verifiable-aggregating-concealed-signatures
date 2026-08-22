@@ -1,11 +1,9 @@
-use ark_bls12_381::{g1::Config as G1Config, G1Projective};
+use ark_bls12_381::{G1Projective, g1::Config as G1Config};
 use ark_ec::hashing::{
-    curve_maps::wb::WBMap,
+    HashToCurve, HashToCurveError, curve_maps::wb::WBMap,
     map_to_curve_hasher::MapToCurveBasedHasher,
-    HashToCurve,
-    HashToCurveError,
 };
-use ark_ff::{field_hashers::DefaultFieldHasher, UniformRand, Zero};
+use ark_ff::{UniformRand, Zero, field_hashers::DefaultFieldHasher};
 use ark_std::rand::Rng;
 use sha2::Sha256;
 

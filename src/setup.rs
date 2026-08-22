@@ -27,7 +27,7 @@ pub struct CSetupParameters {
 
 // Sample a and b to generate the concealed setup parameters (V, W)
 pub fn csetup<R: Rng>(rng: &mut R) -> CSetupParameters {
-    let a = sample_nonzero::<F, _>(rng);
+    let a = sample_nonzero::<F, R>(rng);
     let b = F::rand(rng);
     let g = G1::generator();
 
