@@ -1,3 +1,3 @@
 fn main() {
-    println!("LVACS basic example");
+    println!("LVACS");
 }

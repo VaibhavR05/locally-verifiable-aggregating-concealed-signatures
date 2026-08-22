@@ -1,5 +1,5 @@
-use crate::conceal::{AuxiliaryData, Commitment, ConcealedSignature};
 use crate::setup::CSetupParameters;
+use crate::types::{AuxiliaryData, Commitment, ConcealedSignature};
 use crate::utils::hash_to_g1;
 
 use ark_ec::CurveGroup;

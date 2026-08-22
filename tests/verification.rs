@@ -105,7 +105,7 @@ fn wrong_msg_open() {
 }
 
 #[test]
-fn wrong_param_open() {
+fn wrong_params_concealed() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
     let different_scheme = Scheme::new(&mut rng);
@@ -132,4 +132,90 @@ fn wrong_key_verify() {
         .expect("hashing should succeed");
 
     assert!(!scheme.verify_concealed(&concealed_signature, &verification_key));
+}
+
+// TESTS FOR AGGREGATE SIGNATURES
+
+#[test]
+fn valid_aggregate() {
+    let mut rng = test_rng();
+    let scheme = Scheme::new(&mut rng);
+    let mut verification_keys = Vec::new();
+    let mut concealed_signatures = Vec::new();
+
+    for message in [b"aggregate message one", b"aggregate message two"] {
+        let (signing_key, verification_key) = key_gen(&mut rng);
+        let signature = sign(&signing_key, message).expect("hashing should succeed");
+        let (concealed_signature, _) = scheme
+            .convert(&verification_key, message, &signature, &mut rng)
+            .expect("hashing should succeed");
+
+        verification_keys.push(verification_key);
+        concealed_signatures.push(concealed_signature);
+    }
+
+    let aggregate =
+        scheme.aggregate_concealed_signatures(&verification_keys, &concealed_signatures);
+
+    assert!(scheme.verify_aggregate(&verification_keys, &aggregate));
+}
+
+#[test]
+fn wrong_key_aggregate() {
+    let mut rng = test_rng();
+    let scheme = Scheme::new(&mut rng);
+    let (wrong_signing_key, _) = key_gen(&mut rng);
+    let (_, listed_verification_key) = key_gen(&mut rng);
+    let message = b"aggregate member key binding";
+    let signature = sign(&wrong_signing_key, message).expect("hashing should succeed");
+    let (concealed_signature, _) = scheme
+        .convert(&listed_verification_key, message, &signature, &mut rng)
+        .expect("hashing should succeed");
+
+    let aggregate = scheme.aggregate_concealed_signatures(
+        std::slice::from_ref(&listed_verification_key),
+        std::slice::from_ref(&concealed_signature),
+    );
+
+    assert!(!scheme.verify_aggregate(std::slice::from_ref(&listed_verification_key), &aggregate,));
+}
+
+#[test]
+fn wrong_params_aggregate() {
+    let mut rng = test_rng();
+    let scheme = Scheme::new(&mut rng);
+    let different_scheme = Scheme::new(&mut rng);
+    let (signing_key, verification_key) = key_gen(&mut rng);
+    let message = b"aggregate setup binding";
+    let signature = sign(&signing_key, message).expect("hashing should succeed");
+    let (concealed_signature, _) = scheme
+        .convert(&verification_key, message, &signature, &mut rng)
+        .expect("hashing should succeed");
+
+    let aggregate = scheme.aggregate_concealed_signatures(
+        std::slice::from_ref(&verification_key),
+        std::slice::from_ref(&concealed_signature),
+    );
+
+    assert!(
+        !different_scheme.verify_aggregate(std::slice::from_ref(&verification_key), &aggregate,)
+    );
+}
+
+#[test]
+#[should_panic(expected = "verification key and signature list lengths differ")]
+fn unequal_length_aggregation() {
+    let mut rng = test_rng();
+    let scheme = Scheme::new(&mut rng);
+    let (_, verification_key) = key_gen(&mut rng);
+
+    scheme.aggregate_concealed_signatures(&[verification_key], &[]);
+}
+
+#[test]
+#[should_panic(expected = "empty verify key list")]
+fn empty_input_aggregation() {
+    let scheme = Scheme::new(&mut test_rng());
+
+    scheme.aggregate_concealed_signatures(&[], &[]);
 }

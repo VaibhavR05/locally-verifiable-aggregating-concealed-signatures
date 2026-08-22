@@ -1,9 +1,12 @@
-use crate::conceal::{AuxiliaryData, ConcealedSignature, convert};
+use crate::aggregate::aggregate_concealed_signatures;
+use crate::conceal::convert;
 use crate::keys::{SignKey, VerifyKey, key_gen};
 use crate::open::open_concealed_signature;
 use crate::setup::{CSetupParameters, csetup};
 use crate::signature::{Signature, sign};
-use crate::verify::{verify, verify_concealed};
+use crate::types::{AggregateSignature, AuxiliaryData, ConcealedSignature};
+use crate::verify::{verify, verify_aggregate, verify_concealed};
+
 use ark_std::rand::Rng;
 
 // Top level wrapper for the signature scheme, providing a clean interface for users.
@@ -70,5 +73,21 @@ impl Scheme {
             auxiliary_data,
             &self.cs_params,
         )
+    }
+
+    pub fn aggregate_concealed_signatures(
+        &self,
+        verify_key_list: &[VerifyKey],
+        signature_list: &[ConcealedSignature],
+    ) -> AggregateSignature {
+        aggregate_concealed_signatures(verify_key_list, signature_list)
+    }
+
+    pub fn verify_aggregate(
+        &self,
+        verify_key_list: &[VerifyKey],
+        aggregate_signature: &AggregateSignature,
+    ) -> bool {
+        verify_aggregate(verify_key_list, aggregate_signature, &self.cs_params)
     }
 }

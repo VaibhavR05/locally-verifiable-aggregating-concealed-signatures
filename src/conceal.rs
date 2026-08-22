@@ -1,41 +1,12 @@
 use crate::keys::VerifyKey;
-use crate::params::{F, G1, G2};
+use crate::params::{F, G2};
 use crate::setup::CSetupParameters;
+use crate::types::{AuxiliaryData, Commitment, ConcealedSignature, Proof};
 use crate::utils::hash_to_g1;
 
 use ark_ec::{AffineRepr, CurveGroup, hashing::HashToCurveError};
 use ark_ff::UniformRand;
 use ark_std::rand::Rng;
-
-// Standard format for both signature and message commitments.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Commitment {
-    pub(crate) c1: G1,
-    pub(crate) c2: G1,
-}
-
-// Proof of knowledge elements belong to G2
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Proof {
-    pub(crate) z1: G2,
-    pub(crate) z2: G2,
-}
-
-// Structure of our concealed signature, which includes commitments and a proof of knowledge.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ConcealedSignature {
-    pub(crate) signature_commitment: Commitment,
-    pub(crate) message_commitment: Commitment,
-    pub(crate) proof: Proof,
-}
-
-// Our auxilary data which will be helpful for opening the concealed signature.
-pub struct AuxiliaryData {
-    pub(crate) r_sig: F,
-    pub(crate) s_sig: F,
-    pub(crate) r_msg: F,
-    pub(crate) s_msg: F,
-}
 
 pub fn convert<R: Rng>(
     cs_params: &CSetupParameters,
