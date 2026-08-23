@@ -71,6 +71,17 @@ impl std::ops::Add for Commitment {
     }
 }
 
+impl std::ops::Sub for Commitment {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        Self {
+            c1: (self.c1 - other.c1).into_affine(),
+            c2: (self.c2 - other.c2).into_affine(),
+        }
+    }
+}
+
 impl std::ops::Add for Proof {
     type Output = Self;
 
@@ -82,6 +93,17 @@ impl std::ops::Add for Proof {
     }
 }
 
+impl std::ops::Sub for Proof {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        Self {
+            z1: (self.z1 - other.z1).into_affine(),
+            z2: (self.z2 - other.z2).into_affine(),
+        }
+    }
+}
+
 impl std::ops::Add for Cross {
     type Output = Self;
 
@@ -89,6 +111,17 @@ impl std::ops::Add for Cross {
         Self {
             t1: self.t1 + other.t1,
             t2: self.t2 + other.t2,
+        }
+    }
+}
+
+impl std::ops::Sub for Cross {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        Self {
+            t1: self.t1 - other.t1,
+            t2: self.t2 - other.t2,
         }
     }
 }

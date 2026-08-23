@@ -22,7 +22,7 @@ impl Scheme {
         }
     }
 
-    pub fn key_gen<R: Rng>(&self, rng: &mut R) -> (SignKey, VerifyKey) {
+    pub fn key_gen<R: Rng>(&self, rng: &mut R) -> (VerifyKey, SignKey) {
         key_gen(rng)
     }
 

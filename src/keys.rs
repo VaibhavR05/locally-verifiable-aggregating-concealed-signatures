@@ -15,11 +15,11 @@ pub struct SignKey {
 }
 
 // Standard key generation for BLS signatures.
-pub fn key_gen<R: Rng>(rng: &mut R) -> (SignKey, VerifyKey) {
+pub fn key_gen<R: Rng>(rng: &mut R) -> (VerifyKey, SignKey) {
     let x = sample_nonzero::<F, R>(rng);
     let sk = SignKey { value: x };
     let vk = VerifyKey {
         value: (G2::generator() * sk.value).into_affine(),
     };
-    (sk, vk)
+    (vk, sk)
 }

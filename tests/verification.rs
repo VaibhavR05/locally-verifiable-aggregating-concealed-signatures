@@ -16,7 +16,7 @@ fn generete_agg_tests<R: Rng>(
     let mut concealed_signatures = Vec::with_capacity(messages.len());
 
     for message in messages {
-        let (signing_key, verification_key) = key_gen(rng);
+        let (verification_key, signing_key) = key_gen(rng);
         let signature = sign(&signing_key, message).expect("hashing should succeed");
         let (concealed_signature, _) = scheme
             .convert(&verification_key, message, &signature, rng)
@@ -38,7 +38,7 @@ fn generete_agg_tests<R: Rng>(
 // Valid signature should verify successfully
 fn valid_signature() {
     let mut rng = test_rng();
-    let (signing_key, verification_key) = key_gen(&mut rng);
+    let (verification_key, signing_key) = key_gen(&mut rng);
     let message = b"base signing test";
     let signature = sign(&signing_key, message).expect("hashing should succeed");
 
@@ -52,7 +52,7 @@ fn valid_signature() {
 // Signature should not verify with a different message
 fn wrong_message() {
     let mut rng = test_rng();
-    let (signing_key, verification_key) = key_gen(&mut rng);
+    let (verification_key, signing_key) = key_gen(&mut rng);
     let signature = sign(&signing_key, b"original message").expect("hashing should succeed");
 
     assert!(
@@ -65,8 +65,8 @@ fn wrong_message() {
 // Signature should not verify with a different key
 fn wrong_key() {
     let mut rng = test_rng();
-    let (signing_key, _) = key_gen(&mut rng);
-    let (_, different_verification_key) = key_gen(&mut rng);
+    let (_,signing_key) = key_gen(&mut rng);
+    let (different_verification_key,_) = key_gen(&mut rng);
     let message = b"base signing test";
     let signature = sign(&signing_key, message).expect("hashing should succeed");
 
@@ -80,7 +80,7 @@ fn wrong_key() {
 // Signing same input should produce the same signature
 fn deterministic_signing() {
     let mut rng = test_rng();
-    let (signing_key, verification_key) = key_gen(&mut rng);
+    let (verification_key, signing_key) = key_gen(&mut rng);
     let message = b"deterministic signature";
     let first_signature = sign(&signing_key, message).expect("hashing should succeed");
     let second_signature = sign(&signing_key, message).expect("hashing should succeed");
@@ -98,7 +98,7 @@ fn deterministic_signing() {
 fn verify_and_open_cs() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
-    let (signing_key, verification_key) = key_gen(&mut rng);
+    let (verification_key, signing_key) = key_gen(&mut rng);
     let message = b"concealed signing test";
     let signature = sign(&signing_key, message).expect("hashing should succeed");
     let (concealed_signature, auxiliary_data) = scheme
@@ -117,7 +117,7 @@ fn verify_and_open_cs() {
 fn wrong_msg_open() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
-    let (signing_key, verification_key) = key_gen(&mut rng);
+    let (verification_key, signing_key) = key_gen(&mut rng);
     let message = b"original concealed message";
     let signature = sign(&signing_key, message).expect("hashing should succeed");
     let (concealed_signature, auxiliary_data) = scheme
@@ -140,7 +140,7 @@ fn wrong_params_concealed() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
     let different_scheme = Scheme::new(&mut rng);
-    let (signing_key, verification_key) = key_gen(&mut rng);
+    let (verification_key, signing_key) = key_gen(&mut rng);
     let message = b"setup binding test";
     let signature = sign(&signing_key, message).expect("hashing should succeed");
     let (concealed_signature, _) = scheme
@@ -154,8 +154,8 @@ fn wrong_params_concealed() {
 fn wrong_key_verify() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
-    let (signing_key, _) = key_gen(&mut rng);
-    let (_, verification_key) = key_gen(&mut rng);
+    let ( _,signing_key) = key_gen(&mut rng);
+    let (verification_key, _) = key_gen(&mut rng);
     let message = b"wrong signing key test";
     let signature = sign(&signing_key, message).expect("hashing should succeed");
     let (concealed_signature, _) = scheme
@@ -180,8 +180,8 @@ fn valid_aggregate() {
 fn wrong_key_aggregate() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
-    let (wrong_signing_key, _) = key_gen(&mut rng);
-    let (_, listed_verification_key) = key_gen(&mut rng);
+    let (_, wrong_signing_key) = key_gen(&mut rng);
+    let (listed_verification_key, _) = key_gen(&mut rng);
     let message = b"aggregate member key binding";
     let signature = sign(&wrong_signing_key, message).expect("hashing should succeed");
     let (concealed_signature, _) = scheme
@@ -201,7 +201,7 @@ fn wrong_params_aggregate() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
     let different_scheme = Scheme::new(&mut rng);
-    let (signing_key, verification_key) = key_gen(&mut rng);
+    let (verification_key, signing_key) = key_gen(&mut rng);
     let message = b"aggregate setup binding";
     let signature = sign(&signing_key, message).expect("hashing should succeed");
     let (concealed_signature, _) = scheme
@@ -223,7 +223,7 @@ fn wrong_params_aggregate() {
 fn unequal_length_aggregation() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
-    let (_, verification_key) = key_gen(&mut rng);
+    let (verification_key,_) = key_gen(&mut rng);
 
     scheme.aggregate_concealed_signatures(&[verification_key], &[]);
 }
