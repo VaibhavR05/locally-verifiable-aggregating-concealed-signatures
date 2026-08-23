@@ -1,7 +1,12 @@
 use crate::keys::VerifyKey;
-use crate::types::{AggregateSignature, ConcealedSignature, Cross};
+use crate::types::{
+    AggregateSignature, Commitment, ConcealedSignature, Cross, LocalAggregateOpening, Proof,
+};
 use ark_bls12_381::Bls12_381;
+use ark_ec::AffineRepr;
+use ark_ec::pairing::PairingOutput;
 use ark_ec::{CurveGroup, pairing::Pairing};
+use ark_ff::Zero;
 
 pub fn aggregate_concealed_signatures(
     verify_key_list: &[VerifyKey],
@@ -21,44 +26,118 @@ pub fn aggregate_concealed_signatures(
         .expect("empty verify key list");
 
     // Aggregate all other terms in one loop
-    let (agg_sig, agg_msg, agg_proof, agg_cross) = signature_list
-        .iter()
-        .zip(verify_key_list.iter())
-        .map(|(signature, verify_key)| {
-            let cross = Cross {
-                t1: Bls12_381::pairing(
-                    signature.message_commitment.c1,
-                    (avk - verify_key.value).into_affine(),
-                ),
-                t2: Bls12_381::pairing(
-                    signature.message_commitment.c2,
-                    (avk - verify_key.value).into_affine(),
-                ),
-            };
-            (
-                signature.signature_commitment.clone(),
-                signature.message_commitment.clone(),
-                signature.proof.clone(),
-                cross,
-            )
-        })
-        .reduce(
-            |(sig_a, msg_a, proof_a, cross_a), (sig_b, msg_b, proof_b, cross_b)| {
-                (
-                    sig_a + sig_b,
-                    msg_a + msg_b,
-                    proof_a + proof_b,
-                    cross_a + cross_b,
-                )
-            },
-        )
-        .expect("empty signature list");
+    let mut agg_sig_commitment = Commitment {
+        c1: ark_bls12_381::G1Affine::zero(),
+        c2: ark_bls12_381::G1Affine::zero(),
+    };
+
+    let mut agg_msg_commitment = Commitment {
+        c1: ark_bls12_381::G1Affine::zero(),
+        c2: ark_bls12_381::G1Affine::zero(),
+    };
+
+    let mut agg_proof = Proof {
+        z1: ark_bls12_381::G2Affine::zero(),
+        z2: ark_bls12_381::G2Affine::zero(),
+    };
+    let mut agg_cross = Cross {
+        t1: PairingOutput::<Bls12_381>::zero(),
+        t2: PairingOutput::<Bls12_381>::zero(),
+    };
+
+    for (verify_key, concealed_signature) in verify_key_list.iter().zip(signature_list.iter()) {
+        agg_msg_commitment = agg_msg_commitment + concealed_signature.message_commitment.clone();
+        agg_sig_commitment = agg_sig_commitment + concealed_signature.signature_commitment.clone();
+        agg_proof = agg_proof + concealed_signature.proof.clone();
+
+        let cross = Cross {
+            t1: Bls12_381::pairing(
+                concealed_signature.message_commitment.c1,
+                avk - verify_key.value,
+            ),
+            t2: Bls12_381::pairing(
+                concealed_signature.message_commitment.c2,
+                avk - verify_key.value,
+            ),
+        };
+
+        agg_cross = agg_cross + cross;
+    }
 
     AggregateSignature {
-        signature_commitment: agg_sig,
-        message_commitment: agg_msg,
+        signature_commitment: agg_sig_commitment,
+        message_commitment: agg_msg_commitment,
         proof: agg_proof,
         avk,
         cross: agg_cross,
+    }
+}
+
+pub fn local_aggregate_opening(
+    aggregate_signature: &AggregateSignature,
+    verify_key_list: &[VerifyKey],
+    signature_list: &[ConcealedSignature],
+    index: usize,
+) -> LocalAggregateOpening {
+    assert_eq!(
+        verify_key_list.len(),
+        signature_list.len(),
+        "verification key and signature list lengths differ"
+    );
+    assert!(
+        index < signature_list.len(),
+        "local opening index out of bounds"
+    );
+
+    let mut local_signature_commitment = Commitment {
+        c1: ark_bls12_381::G1Affine::zero(),
+        c2: ark_bls12_381::G1Affine::zero(),
+    };
+    let mut local_message_commitment = Commitment {
+        c1: ark_bls12_381::G1Affine::zero(),
+        c2: ark_bls12_381::G1Affine::zero(),
+    };
+    let mut local_proof = Proof {
+        z1: ark_bls12_381::G2Affine::zero(),
+        z2: ark_bls12_381::G2Affine::zero(),
+    };
+    let mut local_cross = Cross {
+        t1: PairingOutput::<Bls12_381>::zero(),
+        t2: PairingOutput::<Bls12_381>::zero(),
+    };
+
+    for (item_index, (verify_key, concealed_signature)) in verify_key_list
+        .iter()
+        .zip(signature_list.iter())
+        .enumerate()
+    {
+        if item_index == index {
+            continue;
+        }
+
+        local_signature_commitment =
+            local_signature_commitment + concealed_signature.signature_commitment.clone();
+        local_message_commitment =
+            local_message_commitment + concealed_signature.message_commitment.clone();
+        local_proof = local_proof + concealed_signature.proof.clone();
+
+        let cross = Cross {
+            t1: Bls12_381::pairing(
+                concealed_signature.message_commitment.c1,
+                (aggregate_signature.avk - verify_key.value).into_affine(),
+            ),
+            t2: Bls12_381::pairing(
+                concealed_signature.message_commitment.c2,
+                (aggregate_signature.avk - verify_key.value).into_affine(),
+            ),
+        };
+        local_cross = local_cross + cross;
+    }
+
+    LocalAggregateOpening {
+        signature_commitment: local_signature_commitment,
+        message_commitment: local_message_commitment,
+        proof: local_proof,
+        cross: local_cross,
     }
 }

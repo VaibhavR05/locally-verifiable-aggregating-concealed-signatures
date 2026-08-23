@@ -1,11 +1,11 @@
-use crate::aggregate::aggregate_concealed_signatures;
+use crate::aggregate::{aggregate_concealed_signatures, local_aggregate_opening};
 use crate::conceal::convert;
 use crate::keys::{SignKey, VerifyKey, key_gen};
 use crate::open::open_concealed_signature;
 use crate::setup::{CSetupParameters, csetup};
 use crate::signature::{Signature, sign};
-use crate::types::{AggregateSignature, AuxiliaryData, ConcealedSignature};
-use crate::verify::{verify, verify_aggregate, verify_concealed};
+use crate::types::{AggregateSignature, AuxiliaryData, ConcealedSignature, LocalAggregateOpening};
+use crate::verify::{local_verify, verify, verify_aggregate, verify_concealed};
 
 use ark_std::rand::Rng;
 
@@ -45,12 +45,12 @@ impl Scheme {
 
     pub fn convert<R: Rng>(
         &self,
-        verification_key: &VerifyKey,
+        verify_key: &VerifyKey,
         message: &[u8],
         signature: &Signature,
         rng: &mut R,
     ) -> Result<(ConcealedSignature, AuxiliaryData), ark_ec::hashing::HashToCurveError> {
-        convert(&self.cs_params, verification_key, message, signature, rng)
+        convert(&self.cs_params, verify_key, message, signature, rng)
     }
 
     pub fn verify_concealed(
@@ -89,5 +89,31 @@ impl Scheme {
         aggregate_signature: &AggregateSignature,
     ) -> bool {
         verify_aggregate(verify_key_list, aggregate_signature, &self.cs_params)
+    }
+
+    pub fn local_aggregate_opening(
+        &self,
+        aggregate_signature: &AggregateSignature,
+        verify_key_list: &[VerifyKey],
+        signature_list: &[ConcealedSignature],
+        index: usize,
+    ) -> LocalAggregateOpening {
+        local_aggregate_opening(aggregate_signature, verify_key_list, signature_list, index)
+    }
+
+    pub fn local_verify(
+        &self,
+        verify_key: &VerifyKey,
+        aggregate_signature: &AggregateSignature,
+        local_opening: &LocalAggregateOpening,
+        concealed_signature: &ConcealedSignature,
+    ) -> bool {
+        local_verify(
+            verify_key,
+            aggregate_signature,
+            local_opening,
+            concealed_signature,
+            &self.cs_params,
+        )
     }
 }

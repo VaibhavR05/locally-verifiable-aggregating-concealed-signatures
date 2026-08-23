@@ -11,12 +11,14 @@ pub mod types;
 pub mod utils;
 pub mod verify;
 
-pub use aggregate::aggregate_concealed_signatures;
+pub use aggregate::{aggregate_concealed_signatures, local_aggregate_opening};
 pub use conceal::convert;
 pub use keys::{SignKey, VerifyKey, key_gen};
 pub use open::open_concealed_signature;
 pub use scheme::Scheme;
 pub use setup::{CSetupParameters, V, W, csetup};
 pub use signature::{Signature, sign};
-pub use types::{AuxiliaryData, Commitment, ConcealedSignature, Proof};
+pub use types::{
+    AggregateSignature, AuxiliaryData, Commitment, ConcealedSignature, LocalAggregateOpening, Proof,
+};
 pub use verify::{verify, verify_aggregate, verify_concealed};

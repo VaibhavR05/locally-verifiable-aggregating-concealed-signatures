@@ -27,7 +27,10 @@ pub struct ConcealedSignature {
 
 // Our auxilary data which will be helpful for opening the concealed signature.
 pub struct AuxiliaryData {
+    #[allow(dead_code)]
     pub(crate) r_sig: F,
+
+    #[allow(dead_code)]
     pub(crate) s_sig: F,
     pub(crate) r_msg: F,
     pub(crate) s_msg: F,
@@ -45,6 +48,14 @@ pub struct AggregateSignature {
     pub(crate) message_commitment: Commitment,
     pub(crate) proof: Proof,
     pub(crate) avk: G2,
+    pub(crate) cross: Cross,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LocalAggregateOpening {
+    pub(crate) signature_commitment: Commitment,
+    pub(crate) message_commitment: Commitment,
+    pub(crate) proof: Proof,
     pub(crate) cross: Cross,
 }
 
@@ -76,8 +87,8 @@ impl std::ops::Add for Cross {
 
     fn add(self, other: Self) -> Self::Output {
         Self {
-            t1: self.t1 + &other.t1,
-            t2: self.t2 + &other.t2,
+            t1: self.t1 + other.t1,
+            t2: self.t2 + other.t2,
         }
     }
 }

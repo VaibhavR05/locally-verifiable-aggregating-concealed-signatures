@@ -1,5 +1,36 @@
+use ark_std::rand::Rng;
 use ark_std::test_rng;
-use lvacs::{Scheme, key_gen, sign, verify};
+use lvacs::{AggregateSignature, ConcealedSignature, Scheme, VerifyKey, key_gen, sign, verify};
+
+fn generete_agg_tests<R: Rng>(
+    rng: &mut R,
+    messages: &[&[u8]],
+) -> (
+    Scheme,
+    Vec<VerifyKey>,
+    Vec<ConcealedSignature>,
+    AggregateSignature,
+) {
+    let scheme = Scheme::new(rng);
+    let mut verification_keys = Vec::with_capacity(messages.len());
+    let mut concealed_signatures = Vec::with_capacity(messages.len());
+
+    for message in messages {
+        let (signing_key, verification_key) = key_gen(rng);
+        let signature = sign(&signing_key, message).expect("hashing should succeed");
+        let (concealed_signature, _) = scheme
+            .convert(&verification_key, message, &signature, rng)
+            .expect("hashing should succeed");
+
+        verification_keys.push(verification_key);
+        concealed_signatures.push(concealed_signature);
+    }
+
+    let aggregate =
+        scheme.aggregate_concealed_signatures(&verification_keys, &concealed_signatures);
+
+    (scheme, verification_keys, concealed_signatures, aggregate)
+}
 
 // TESTS FOR THE BASE SIGNATURE SCHEME (BLS)
 
@@ -139,23 +170,8 @@ fn wrong_key_verify() {
 #[test]
 fn valid_aggregate() {
     let mut rng = test_rng();
-    let scheme = Scheme::new(&mut rng);
-    let mut verification_keys = Vec::new();
-    let mut concealed_signatures = Vec::new();
-
-    for message in [b"aggregate message one", b"aggregate message two"] {
-        let (signing_key, verification_key) = key_gen(&mut rng);
-        let signature = sign(&signing_key, message).expect("hashing should succeed");
-        let (concealed_signature, _) = scheme
-            .convert(&verification_key, message, &signature, &mut rng)
-            .expect("hashing should succeed");
-
-        verification_keys.push(verification_key);
-        concealed_signatures.push(concealed_signature);
-    }
-
-    let aggregate =
-        scheme.aggregate_concealed_signatures(&verification_keys, &concealed_signatures);
+    let messages: &[&[u8]] = &[b"aggregate message one", b"aggregate message two"];
+    let (scheme, verification_keys, _, aggregate) = generete_agg_tests(&mut rng, messages);
 
     assert!(scheme.verify_aggregate(&verification_keys, &aggregate));
 }
@@ -218,4 +234,52 @@ fn empty_input_aggregation() {
     let scheme = Scheme::new(&mut test_rng());
 
     scheme.aggregate_concealed_signatures(&[], &[]);
+}
+
+#[test]
+fn verify_opening() {
+    let mut rng = test_rng();
+    let messages: &[&[u8]] = &[
+        b"aggregate message one",
+        b"aggregate message two",
+        b"aggregate message three",
+    ];
+    let (scheme, verification_keys, concealed_signatures, aggregate) =
+        generete_agg_tests(&mut rng, messages);
+
+    let opening =
+        scheme.local_aggregate_opening(&aggregate, &verification_keys, &concealed_signatures, 1);
+
+    assert!(scheme.local_verify(
+        &verification_keys[1],
+        &aggregate,
+        &opening,
+        &concealed_signatures[1]
+    ));
+}
+
+#[test]
+fn wrong_opening() {
+    let messages: &[&[u8]] = &[b"test message 1", b"test message 2", b"test message 3"];
+
+    let (scheme, verification_keys, concealed_signatures, aggregate) =
+        generete_agg_tests(&mut test_rng(), messages);
+
+    let opening1 =
+        scheme.local_aggregate_opening(&aggregate, &verification_keys, &concealed_signatures, 1);
+    let opening2 =
+        scheme.local_aggregate_opening(&aggregate, &verification_keys, &concealed_signatures, 2);
+
+    assert!(scheme.local_verify(
+        &verification_keys[1],
+        &aggregate,
+        &opening1,
+        &concealed_signatures[1]
+    ));
+    assert!(!scheme.local_verify(
+        &verification_keys[1],
+        &aggregate,
+        &opening2,
+        &concealed_signatures[1]
+    ));
 }
