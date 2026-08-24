@@ -1,20 +1,20 @@
-use lvacs::{Scheme};
 use ark_std::test_rng;
+use lvacs::Scheme;
 
 fn main() {
     // TODO:
     // Implement custom errors for specific use cases that are being handled by panics right now
 
-    let rng = &mut test_rng(); 
+    let rng = &mut test_rng();
 
     // ----- SETUP -----
 
-    // Start by initializing a scheme. 
+    // Start by initializing a scheme.
     // This automatically generates the required parameters for all signatures
     let lvacs = Scheme::new(rng);
 
     // Generate keys with a custom controlled rng
-    let (vk,sk) = lvacs.key_gen(rng);
+    let (vk, sk) = lvacs.key_gen(rng);
 
     // ----- BLS -----
 
@@ -34,13 +34,17 @@ fn main() {
     assert!(lvacs.verify_concealed(&concealed_sig, &vk));
 
     // Open a concealed signature to prove validity
-    assert!(lvacs.open_concealed_signature(message, &concealed_sig, &aux).unwrap());
+    assert!(
+        lvacs
+            .open_concealed_signature(message, &concealed_sig, &aux)
+            .unwrap()
+    );
 
     // ----- AGGREGATE SIGNATURES -----
 
     // Create signatures with different keys for demonstration
-    let (vk0,sk1) = lvacs.key_gen(rng);
-    let (vk1,sk2) = lvacs.key_gen(rng);
+    let (vk0, sk1) = lvacs.key_gen(rng);
+    let (vk1, sk2) = lvacs.key_gen(rng);
     let vk_list = [vk0.clone(), vk1.clone()];
 
     let m0 = b"Aggregate message 1";
@@ -55,10 +59,9 @@ fn main() {
 
     // Aggregate multiple signatures
     let aggregate_sig = lvacs.aggregate_concealed_signatures(&vk_list, &sig_list);
-    
+
     // Verify the aggregate signature with all VerifyKeys
     assert!(lvacs.verify_aggregate(&vk_list, &aggregate_sig));
-
 
     // ----- LOCAL OPENINGS -----
 
@@ -67,5 +70,4 @@ fn main() {
 
     // Verify aggregate signatures with a local opening and signature
     assert!(lvacs.local_verify(&vk1, &aggregate_sig, &opening1, &cs1));
-
 }

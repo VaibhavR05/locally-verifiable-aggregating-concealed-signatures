@@ -65,8 +65,8 @@ fn wrong_message() {
 // Signature should not verify with a different key
 fn wrong_key() {
     let mut rng = test_rng();
-    let (_,signing_key) = key_gen(&mut rng);
-    let (different_verification_key,_) = key_gen(&mut rng);
+    let (_, signing_key) = key_gen(&mut rng);
+    let (different_verification_key, _) = key_gen(&mut rng);
     let message = b"base signing test";
     let signature = sign(&signing_key, message).expect("hashing should succeed");
 
@@ -154,7 +154,7 @@ fn wrong_params_concealed() {
 fn wrong_key_verify() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
-    let ( _,signing_key) = key_gen(&mut rng);
+    let (_, signing_key) = key_gen(&mut rng);
     let (verification_key, _) = key_gen(&mut rng);
     let message = b"wrong signing key test";
     let signature = sign(&signing_key, message).expect("hashing should succeed");
@@ -223,7 +223,7 @@ fn wrong_params_aggregate() {
 fn unequal_length_aggregation() {
     let mut rng = test_rng();
     let scheme = Scheme::new(&mut rng);
-    let (verification_key,_) = key_gen(&mut rng);
+    let (verification_key, _) = key_gen(&mut rng);
 
     scheme.aggregate_concealed_signatures(&[verification_key], &[]);
 }

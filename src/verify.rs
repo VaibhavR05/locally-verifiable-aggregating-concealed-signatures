@@ -21,6 +21,7 @@ pub fn verify(
     Ok(pairing_left == pairing_right)
 }
 
+// Verification function for concealed signatures.
 pub fn verify_concealed(
     concealed_signature: &ConcealedSignature,
     verify_key: &VerifyKey,
@@ -63,6 +64,7 @@ pub fn verify_concealed(
     (lhs1 == rhs1) && (lhs2 == rhs2)
 }
 
+// Verification function for aggregate signatures.
 pub fn verify_aggregate(
     verify_key_list: &[VerifyKey],
     aggregate_signature: &AggregateSignature,
@@ -115,6 +117,7 @@ pub fn verify_aggregate(
     (lhs1 == rhs1) && (lhs2 == rhs2)
 }
 
+// Verification function for aggregate signatures with local openings.
 pub fn local_verify(
     verify_key: &VerifyKey,
     aggregate_signature: &AggregateSignature,

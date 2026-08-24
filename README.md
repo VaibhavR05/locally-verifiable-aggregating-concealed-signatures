@@ -1,4 +1,4 @@
-# LVACS - Locally Verifiable Aggregate Concealed Signatures
+# LVACS - Locally Verifiable Aggregating Concealed Signatures
 
 A Rust implementation of a pairing-based signature scheme that allows signature aggregation over concealed signatures
 
@@ -41,6 +41,7 @@ src/
   aggregate.rs    — aggregations and local opening generation
   verify.rs       — implementations of all verification algorithms
   scheme.rs       — top level wrapper for the entire LVACS scheme
+  utils.rs        — helper functions for the scheme
 
 benches/
 
@@ -91,13 +92,6 @@ cargo test -- --nocapture
 
 # Run traitor tracing integration tests (slow: ~4s release per call)
 cargo test test_trace -- --ignored
-
-# Run all benchmarks (vary n over {16,25,36,49,64,81}, t=n/2)
-cargo bench
-
-# Run a single benchmark suite
-cargo bench --bench keygen
-cargo bench --bench batch_decrypt
 -->
 
 ```bash
@@ -107,6 +101,15 @@ cargo test
 
 # Run the example code
 cargo run --example basic
+
+# Run all benchmarks
+cargo bench
+
+# Run a single benchmark suite
+cargo bench --bench bls
+cargo bench --bench concealed
+cargo bench --bench aggregate
+cargo bench --bench verify
 
 ```
 
@@ -172,16 +175,22 @@ Digest                         0(    0B)     1(   96B)    0(    0B)     0(    0B
 
 ## Benchmarks
 
-<!-- Benchmarks use [Criterion](https://github.com/bheisler/criterion.rs) and sweep `n ∈ {16, 25, 36, 49, 64, 81}` with `t = n/2`. The `batch_decrypt` bench additionally sweeps `batch_size ∈ {1, 5, 10, 20, 50}`.
+Benchmarks use [Criterion](https://github.com/bheisler/criterion.rs). The shared
+loader in `benches/datasets/` generates deterministic messages locally and
+derives the corresponding keys, signatures, concealed signatures, aggregates,
+and local openings outside timed iterations.
+The BLS, concealed, and verification suites use one fixed 32-signature fixture;
+only aggregation and local-opening measurements sweep input sizes. Missing
 
 ```bash
-cargo bench                        # run all
-cargo bench --bench batch_decrypt  # batch decrypt only
+cargo bench                         # run all suites
+cargo bench --bench bls             # base BLS operations
+cargo bench --bench concealed       # conversion, concealed verification, opening
+cargo bench --bench aggregate       # aggregation and local openings
+cargo bench --bench verify          # aggregate, local, and BLS verification
 ```
 
-HTML reports are written to `target/criterion/`.
-
---- -->
+Criterion reports are written to `target/criterion/`.
 
 ## Cryptographic library
 

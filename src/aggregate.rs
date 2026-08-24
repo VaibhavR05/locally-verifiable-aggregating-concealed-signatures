@@ -89,28 +89,26 @@ pub fn local_aggregate_opening(
         "local opening index out of bounds"
     );
 
-    // let mut local_signature_commitment = 
-    //     aggregate_signature.signature_commitment.clone() - signature_list[index].signature_commitment.clone();
-    
-    // let mut local_message_commitment = 
-    //     aggregate_signature.message_commitment.clone() - signature_list[index].message_commitment.clone();
-    // let mut local_proof = 
-    //     aggregate_signature.proof.clone() - signature_list[index].proof.clone();
-    // // 
-    
+    // let local_signature_commitment = aggregate_signature.signature_commitment.clone()
+    //     - signature_list[index].signature_commitment.clone();
+
+    // let local_message_commitment = aggregate_signature.message_commitment.clone()
+    //     - signature_list[index].message_commitment.clone();
+    // let local_proof = aggregate_signature.proof.clone() - signature_list[index].proof.clone();
+    // //
+
     // let cross = Cross {
-    //         t1: Bls12_381::pairing(
-    //             signature_list[index].message_commitment.c1,
-    //             (aggregate_signature.avk - verify_key_list[index].value).into_affine(),
-    //         ),
-    //         t2: Bls12_381::pairing(
-    //             signature_list[index].message_commitment.c2,
-    //             (aggregate_signature.avk - verify_key_list[index].value).into_affine(),
-    //         ),
-    //     };
+    //     t1: Bls12_381::pairing(
+    //         signature_list[index].message_commitment.c1,
+    //         (aggregate_signature.avk - verify_key_list[index].value).into_affine(),
+    //     ),
+    //     t2: Bls12_381::pairing(
+    //         signature_list[index].message_commitment.c2,
+    //         (aggregate_signature.avk - verify_key_list[index].value).into_affine(),
+    //     ),
+    // };
 
-    // let mut local_cross = aggregate_signature.cross.clone() - cross.clone();
-
+    // let local_cross = aggregate_signature.cross.clone() - cross.clone();
 
     let mut local_signature_commitment = Commitment {
         c1: ark_bls12_381::G1Affine::zero(),

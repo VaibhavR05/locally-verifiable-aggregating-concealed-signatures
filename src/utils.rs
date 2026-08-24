@@ -9,7 +9,6 @@ use sha2::Sha256;
 
 use crate::params::G1;
 
-// Using SHA256 for now, will probably need to switch later on
 const G1_HASH_DST: &[u8] = b"BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_";
 
 // Sampling for x (secret key) and a (in csetup) require Zp* instead of Zp
