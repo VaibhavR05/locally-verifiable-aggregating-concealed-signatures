@@ -4,9 +4,7 @@ use crate::types::{
 };
 use ark_bls12_381::Bls12_381;
 use ark_ec::AffineRepr;
-use ark_ec::pairing::PairingOutput;
 use ark_ec::{CurveGroup, pairing::Pairing};
-use ark_ff::Zero;
 
 pub fn aggregate_concealed_signatures(
     verify_key_list: &[VerifyKey],
@@ -18,51 +16,49 @@ pub fn aggregate_concealed_signatures(
         "verification key and signature list lengths differ"
     );
 
-    // Get the aggregated public key avk
     let avk = verify_key_list
         .iter()
         .map(|verify_key| verify_key.value)
         .reduce(|a, b| (a + b).into_affine())
         .expect("empty verify key list");
 
-    // Aggregate all other terms in one loop
     let mut agg_sig_commitment = Commitment {
         c1: ark_bls12_381::G1Affine::zero(),
         c2: ark_bls12_381::G1Affine::zero(),
     };
-
     let mut agg_msg_commitment = Commitment {
         c1: ark_bls12_381::G1Affine::zero(),
         c2: ark_bls12_381::G1Affine::zero(),
     };
-
     let mut agg_proof = Proof {
         z1: ark_bls12_381::G2Affine::zero(),
         z2: ark_bls12_381::G2Affine::zero(),
     };
-    let mut agg_cross = Cross {
-        t1: PairingOutput::<Bls12_381>::zero(),
-        t2: PairingOutput::<Bls12_381>::zero(),
-    };
+
+    // Collect every (G1, G2) pair instead of pairing (Miller loop + final
+    // exponentiation) per signer; one multi_pairing at the end does a single
+    // combined Miller loop + single final exponentiation for the whole batch.
+    let mut t1_lhs = Vec::with_capacity(signature_list.len());
+    let mut t1_rhs = Vec::with_capacity(signature_list.len());
+    let mut t2_lhs = Vec::with_capacity(signature_list.len());
+    let mut t2_rhs = Vec::with_capacity(signature_list.len());
 
     for (verify_key, concealed_signature) in verify_key_list.iter().zip(signature_list.iter()) {
         agg_msg_commitment = agg_msg_commitment + concealed_signature.message_commitment.clone();
         agg_sig_commitment = agg_sig_commitment + concealed_signature.signature_commitment.clone();
         agg_proof = agg_proof + concealed_signature.proof.clone();
 
-        let cross = Cross {
-            t1: Bls12_381::pairing(
-                concealed_signature.message_commitment.c1,
-                avk - verify_key.value,
-            ),
-            t2: Bls12_381::pairing(
-                concealed_signature.message_commitment.c2,
-                avk - verify_key.value,
-            ),
-        };
-
-        agg_cross = agg_cross + cross;
+        let diff = (avk - verify_key.value).into_affine();
+        t1_lhs.push(concealed_signature.message_commitment.c1);
+        t1_rhs.push(diff);
+        t2_lhs.push(concealed_signature.message_commitment.c2);
+        t2_rhs.push(diff);
     }
+
+    let agg_cross = Cross {
+        t1: Bls12_381::multi_pairing(t1_lhs, t1_rhs),
+        t2: Bls12_381::multi_pairing(t2_lhs, t2_rhs),
+    };
 
     AggregateSignature {
         signature_commitment: agg_sig_commitment,
@@ -89,27 +85,6 @@ pub fn local_aggregate_opening(
         "local opening index out of bounds"
     );
 
-    // let local_signature_commitment = aggregate_signature.signature_commitment.clone()
-    //     - signature_list[index].signature_commitment.clone();
-
-    // let local_message_commitment = aggregate_signature.message_commitment.clone()
-    //     - signature_list[index].message_commitment.clone();
-    // let local_proof = aggregate_signature.proof.clone() - signature_list[index].proof.clone();
-    // //
-
-    // let cross = Cross {
-    //     t1: Bls12_381::pairing(
-    //         signature_list[index].message_commitment.c1,
-    //         (aggregate_signature.avk - verify_key_list[index].value).into_affine(),
-    //     ),
-    //     t2: Bls12_381::pairing(
-    //         signature_list[index].message_commitment.c2,
-    //         (aggregate_signature.avk - verify_key_list[index].value).into_affine(),
-    //     ),
-    // };
-
-    // let local_cross = aggregate_signature.cross.clone() - cross.clone();
-
     let mut local_signature_commitment = Commitment {
         c1: ark_bls12_381::G1Affine::zero(),
         c2: ark_bls12_381::G1Affine::zero(),
@@ -122,10 +97,11 @@ pub fn local_aggregate_opening(
         z1: ark_bls12_381::G2Affine::zero(),
         z2: ark_bls12_381::G2Affine::zero(),
     };
-    let mut local_cross = Cross {
-        t1: PairingOutput::<Bls12_381>::zero(),
-        t2: PairingOutput::<Bls12_381>::zero(),
-    };
+
+    let mut t1_lhs = Vec::with_capacity(signature_list.len() - 1);
+    let mut t1_rhs = Vec::with_capacity(signature_list.len() - 1);
+    let mut t2_lhs = Vec::with_capacity(signature_list.len() - 1);
+    let mut t2_rhs = Vec::with_capacity(signature_list.len() - 1);
 
     for (item_index, (verify_key, concealed_signature)) in verify_key_list
         .iter()
@@ -142,18 +118,17 @@ pub fn local_aggregate_opening(
             local_message_commitment + concealed_signature.message_commitment.clone();
         local_proof = local_proof + concealed_signature.proof.clone();
 
-        let cross = Cross {
-            t1: Bls12_381::pairing(
-                concealed_signature.message_commitment.c1,
-                (aggregate_signature.avk - verify_key.value).into_affine(),
-            ),
-            t2: Bls12_381::pairing(
-                concealed_signature.message_commitment.c2,
-                (aggregate_signature.avk - verify_key.value).into_affine(),
-            ),
-        };
-        local_cross = local_cross + cross;
+        let diff = (aggregate_signature.avk - verify_key.value).into_affine();
+        t1_lhs.push(concealed_signature.message_commitment.c1);
+        t1_rhs.push(diff);
+        t2_lhs.push(concealed_signature.message_commitment.c2);
+        t2_rhs.push(diff);
     }
+
+    let local_cross = Cross {
+        t1: Bls12_381::multi_pairing(t1_lhs, t1_rhs),
+        t2: Bls12_381::multi_pairing(t2_lhs, t2_rhs),
+    };
 
     LocalAggregateOpening {
         signature_commitment: local_signature_commitment,

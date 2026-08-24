@@ -10,7 +10,7 @@ fn benchmark_aggregate(c: &mut Criterion) {
         let dataset = datasets::Dataset::load(size);
         group.throughput(Throughput::Elements(size as u64));
         group.bench_with_input(
-            BenchmarkId::new("concealed_signatures", size),
+            BenchmarkId::new("aggregate_signatures", size),
             &size,
             |b, &size| {
                 b.iter(|| {
@@ -21,6 +21,7 @@ fn benchmark_aggregate(c: &mut Criterion) {
                 });
             },
         );
+        
         group.bench_with_input(
             BenchmarkId::new("local_opening", size),
             &size,

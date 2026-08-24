@@ -13,14 +13,6 @@ fn benchmark_verify(c: &mut Criterion) {
         0,
     );
 
-    group.bench_function("aggregate", |b| {
-        b.iter(|| {
-            dataset.scheme().verify_aggregate(
-                black_box(dataset.verification_keys()),
-                black_box(dataset.aggregate()),
-            )
-        });
-    });
     group.bench_function("local", |b| {
         b.iter(|| {
             dataset.scheme().local_verify(
